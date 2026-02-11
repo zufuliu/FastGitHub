@@ -50,9 +50,12 @@ namespace FastGithub.PacketIntercept.Dns
             using (var fileStream = new FileStream(hostsPath, FileMode.Open, FileAccess.Read))
             {
                 using var streamReader = new StreamReader(fileStream);
-                while (streamReader.EndOfStream == false)
+                while (true)
                 {
                     var line = await streamReader.ReadLineAsync(cancellationToken);
+                    if (line == null) {
+                        break;
+                    }
                     if (this.IsConflictingLine(line))
                     {
                         hasConflicting = true;
