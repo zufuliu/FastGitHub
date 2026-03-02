@@ -93,7 +93,7 @@ namespace FastGithub.DomainResolve
         /// <returns></returns>
         private async Task<AddressElapsed> GetAddressElapsedAsync(IPEndPoint endPoint, CancellationToken cancellationToken)
         {
-            if (this.addressElapsedCache.TryGetValue<AddressElapsed>(endPoint, out var addressElapsed))
+            if (this.addressElapsedCache.TryGetValue<AddressElapsed>(endPoint, out var addressElapsed) && addressElapsed != null)
             {
                 return addressElapsed;
             }

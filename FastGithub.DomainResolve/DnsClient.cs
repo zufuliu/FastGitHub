@@ -161,7 +161,7 @@ namespace FastGithub.DomainResolve
 
             try
             {
-                if (this.dnsLookupCache.TryGetValue<IList<IPAddress>>(key, out var value))
+                if (this.dnsLookupCache.TryGetValue<IList<IPAddress>>(key, out var value) && value != null)
                 {
                     return value;
                 }
