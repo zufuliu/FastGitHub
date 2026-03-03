@@ -123,6 +123,29 @@ namespace FastGithub.HttpServer.Certs
         }
 
         /// <summary>
+        /// 从文件加载证书
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static X509Certificate2 LoadCertificateFromFile(string path) {
+#if NET9_0_OR_GREATER
+            // https://learn.microsoft.com/en-us/dotnet/fundamentals/syslib-diagnostics/syslib0057
+            var type = X509Certificate2.GetCertContentType(path);
+            if (type == X509ContentType.Cert) {
+                return X509CertificateLoader.LoadCertificateFromFile(path);
+            }
+            if (type == X509ContentType.Pkcs12) {
+                return X509CertificateLoader.LoadPkcs12FromFile(path, null);
+            }
+#pragma warning disable SYSLIB0057
+            return new X509Certificate2(path);
+#pragma warning restore SYSLIB0057
+#else
+            return new X509Certificate2(path);
+#endif
+        }
+
+        /// <summary>
         /// 获取颁发给指定域名的证书
         /// </summary>
         /// <param name="domain"></param> 
@@ -133,7 +156,8 @@ namespace FastGithub.HttpServer.Certs
             {
                 using var rsa = RSA.Create();
                 rsa.ImportFromPem(File.ReadAllText(this.CaKeyFilePath));
-                this.caCert = new X509Certificate2(this.CaCerFilePath).CopyWithPrivateKey(rsa);
+                var cert = LoadCertificateFromFile(this.CaCerFilePath);
+                this.caCert = cert.CopyWithPrivateKey(rsa);
             }
 
             var key = $"{nameof(CertService)}:{domain}";
@@ -153,7 +177,12 @@ namespace FastGithub.HttpServer.Certs
                 var endCert = CertGenerator.CreateEndCertificate(this.caCert, subjectName, extraDomains, notBefore, notAfter);
 
                 // 重新初始化证书，以兼容win平台不能使用内存证书
-                return new X509Certificate2(endCert.Export(X509ContentType.Pfx));
+                var data = endCert.Export(X509ContentType.Pfx);
+#if NET9_0_OR_GREATER
+                return X509CertificateLoader.LoadPkcs12(data, null);
+#else
+                return new X509Certificate2(data);
+#endif
             }
         }
 
