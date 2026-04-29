@@ -1,11 +1,31 @@
 name: build_test
-on:
-  push:
-  pull_request:
+
+on: [push, pull_request]
+
+defaults:
+  run:
+    shell: cmd
+
 jobs:
   test:
+    strategy:
+      matrix:
+        runtime: [win-x64, linux-x64, linux-arm64, osx-arm64, osx-x64]
+    name: ${{ matrix.runtime }}
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
+
     - name: Build
-      run: ./publish.cmd
+      run: |
+        dotnet build -c Release -r ${{ matrix.runtime }} -o "output/fastgithub_${{ matrix.runtime }}" ./FastGithub/FastGithub.csproj
+
+    - name: Build UI
+      if: matrix.runtime == 'win-x64'
+      run: |
+        dotnet build -c Release -r ${{ matrix.runtime }} -o "output/fastgithub_${{ matrix.runtime }}" ./FastGithub.UI/FastGithub.UI.csproj
+
+    - uses: actions/upload-artifact@v7
+      with:
+          name: fastgithub_${{ matrix.runtime }}
+          path: 'output/fastgithub_${{ matrix.runtime }}'
